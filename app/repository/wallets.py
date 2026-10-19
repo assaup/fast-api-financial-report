@@ -1,6 +1,7 @@
-from app.models import Wallet, User
+from app.models import Wallet
 from decimal import Decimal
 from sqlalchemy.orm import Session
+from app.enum import CurrencyEnum
 
 def is_wallet_exist(db: Session, user_id: int, wallet_name: str) -> bool:
     return db.query(Wallet).filter(Wallet.name == wallet_name, Wallet.user_id == user_id).first() is not None
@@ -26,8 +27,8 @@ def get_all_wallets(db: Session, user_id: int) -> list[Wallet]:
     return db.query(Wallet).filter(Wallet.user_id == user_id).all()
 
 
-def create_wallet(db: Session, user_id: int, wallet_name: str, amount: float) -> Wallet:
-    wallet = Wallet(name=wallet_name, balance=amount, user_id=user_id)
+def create_wallet(db: Session, user_id: int, wallet_name: str, amount: float, currency: CurrencyEnum) -> Wallet:
+    wallet = Wallet(name=wallet_name, balance=amount, user_id=user_id, currency=currency)
     db.add(wallet)
     db.flush()
     return wallet
