@@ -8,7 +8,7 @@ def add_income(db: Session, current_user: User, operation: OperationRequest):
     if not wallets_repository.is_wallet_exist(db, current_user.id, operation.wallet_name):
         raise HTTPException(
             status_code = 404,
-            detail=f"Wallet '{operation.wallet_nem}' not found"
+            detail=f"Wallet '{operation.wallet_name}' not found"
         )
 
     wallet = wallets_repository.add_income(db, current_user.id, operation.wallet_name, operation.amount)
@@ -26,7 +26,7 @@ def add_expense(db: Session, current_user: User, operation: OperationRequest):
     if not wallets_repository.is_wallet_exist(db, current_user.id,operation.wallet_name):
         raise HTTPException(
                 status_code = 404,
-                detail=f"Wallet '{operation.wallet_nem}' not found"
+                detail=f"Wallet '{operation.wallet_name}' not found"
             )
     
     wallet = wallets_repository.get_wallet_balance_by_name(db, current_user.id, operation.wallet_name)
