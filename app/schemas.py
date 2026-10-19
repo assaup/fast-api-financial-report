@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field, field_validator
 from decimal import Decimal
 from app.enum import CurrencyEnum
+from datetime import datetime
 
 
 class OperationRequest(BaseModel):
@@ -52,8 +53,21 @@ class UserResponse(UserRequest):
 
 class WalletResponse(BaseModel):
     model_config = {"from_attributes": True}
-    
+
     id: int
     name: str
     balance: Decimal
     currency: CurrencyEnum
+
+
+class OperationResponse(BaseModel):
+    model_config = {"from_attributes": True}
+
+    id: int
+    wallet_id: int
+    type: str
+    amount: Decimal
+    currency: CurrencyEnum
+    category: str | None
+    subcategory: str | None
+    created_at: datetime
