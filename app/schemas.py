@@ -1,46 +1,25 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, StringConstraints, model_validator
 from decimal import Decimal
 from app.enum import CurrencyEnum
 from datetime import datetime
+from typing import Annotated, Self
+
+
+PositiveMoney = Annotated[Decimal, Field(gt=0, max_digits=12, decimal_places=2)]
+NonNegativeMoney = Annotated[Decimal, Field(ge=0, max_digits=12, decimal_places=2)]
+WalletName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=127)]
 
 
 class OperationRequest(BaseModel):
-    wallet_name: str = Field(..., max_length=127)
-    amount: Decimal
+    wallet_name: WalletName
+    amount: PositiveMoney
     description: str | None = Field(None, max_length=255)
-
-    @field_validator('amount')
-    def amount_must_be_positive(cls, v: float) -> float:
-        if v <= 0:
-            raise ValueError('Amount must ve positive')
-        return v
-
-    @field_validator("wallet_name")
-    def wallet_name_not_empty(cls, v: str) -> str:
-        v = v.strip()
-        if not v:
-            raise ValueError("Wallet name cannot be empty")
-        return v
 
 
 class CreateWalletRequest(BaseModel):
-    name: str = Field(..., max_length=127)
-    initial_balance: Decimal = 0
-
+    name: WalletName
+    initial_balance: NonNegativeMoney = Decimal(0)
     currency: CurrencyEnum = CurrencyEnum.RUB
-
-    @field_validator("name")
-    def wallet_name_not_empty(cls, v: str) -> str:
-        v = v.strip()
-        if not v:
-            raise ValueError("Wallet name cannot be empty")
-        return v
-
-    @field_validator('initial_balance')
-    def balance_not_negative(cls, v: Decimal) -> Decimal:
-        if v < 0:
-            raise ValueError('Amount must ve cannot be negative')
-        return v
 
 
 class UserRequest(BaseModel):
@@ -74,25 +53,16 @@ class OperationResponse(BaseModel):
 
 
 class TransferCreateSchema(BaseModel):
-    from_wallet_id: int
-    to_wallet_id: int
-    amount: Decimal
+    from_wallet_id: int = Field(gt=0)
+    to_wallet_id: int = Field(gt=0)
+    amount: PositiveMoney
 
     # Запрет перевода самому себе
-    @field_validator("to_wallet_id")
-    @classmethod
-    def wallet_must_differ(cls, v: int, info) -> int:
-        if "from_wallet_id" in info.data and v == info.data["from_wallet_id"]:
-            raise ValueError("Same wallets ids!")
-        return v
-
-    # Проверка суммы перевода
-    @field_validator("amount")
-    @classmethod
-    def amount_gt_zero(cls, v: Decimal) -> Decimal:
-        if v <= 0:
-            raise ValueError('Amount cannot be negative')
-        return v
+    @model_validator(mode='after')
+    def wallet_must_differ(self) -> Self:
+        if self.from_wallet_id == self.to_wallet_id:
+            raise ValueError("Cannot transfer to the same wallet")
+        return self
 
 class TotalBalance(BaseModel):
     total_balance: Decimal

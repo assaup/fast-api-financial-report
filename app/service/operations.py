@@ -2,21 +2,25 @@ from app.schemas import OperationRequest, OperationResponse
 from fastapi import HTTPException
 from app.repository import wallets as wallets_repository
 from app.repository import operations as operations_repository
-from app.models import User
+from app.models import User, Wallet
 from app.enum import OperationType
 from sqlalchemy.orm import Session
 from datetime import datetime
 from decimal import Decimal
 from app.service.exchange_service import get_exchange_rate
 
-def add_income(db: Session, current_user: User, operation: OperationRequest):
-    if not wallets_repository.is_wallet_exist(db, current_user.id, operation.wallet_name):
-        raise HTTPException(
-            status_code = 404,
-            detail=f"Wallet '{operation.wallet_name}' not found"
-        )
 
-    wallet = wallets_repository.add_income(db, current_user.id, operation.wallet_name, operation.amount)
+def _get_wallet_or_404(db: Session, user_id: int, wallet_name: str) -> Wallet:
+    wallet = wallets_repository.get_wallet_balance_by_name(db, user_id, wallet_name)
+    if wallet is None:
+        raise HTTPException(status_code=404, detail=f"Wallet '{wallet_name}' not found")
+    return wallet
+
+def add_income(db: Session, current_user: User, operation: OperationRequest):
+    wallet = _get_wallet_or_404(db, current_user.id, operation.wallet_name)
+
+    wallet.balance += operation.amount
+    
     operation = operations_repository.create_operation(
         db=db,
         wallet_id=wallet.id,
@@ -30,21 +34,15 @@ def add_income(db: Session, current_user: User, operation: OperationRequest):
 
 
 def add_expense(db: Session, current_user: User, operation: OperationRequest):
-    if not wallets_repository.is_wallet_exist(db, current_user.id,operation.wallet_name):
-        raise HTTPException(
-                status_code = 404,
-                detail=f"Wallet '{operation.wallet_name}' not found"
-            )
-    
-    wallet = wallets_repository.get_wallet_balance_by_name(db, current_user.id, operation.wallet_name)
-    
+    wallet = _get_wallet_or_404(db, current_user.id, operation.wallet_name)
+
     if wallet.balance < operation.amount:
         raise HTTPException(
             status_code=400,
             detail=f"Insufficient funds. Avaible: {wallet.balance}"
         )
     
-    wallet = wallets_repository.add_expense(db, current_user.id, operation.wallet_name, operation.amount)
+    wallet.balance -= operation.amount
     operation = operations_repository.create_operation(
         db=db,
         wallet_id=wallet.id,

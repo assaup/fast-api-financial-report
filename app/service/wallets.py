@@ -24,7 +24,7 @@ async def get_total_balance(db: Session, current_user: User) -> TotalBalance:
 
 
 def create_wallet(db: Session, current_user: User, wallet: CreateWalletRequest) -> WalletResponse:
-    if wallets_repository.is_wallet_exist(db, current_user.id, wallet.name):
+    if wallets_repository.get_wallet_balance_by_name(db, current_user.id, wallet.name):
         raise HTTPException(
             status_code=400,
             detail=f"Wallet '{wallet.name}' already exists"
