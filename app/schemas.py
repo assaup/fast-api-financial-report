@@ -22,13 +22,25 @@ class CreateWalletRequest(BaseModel):
     currency: CurrencyEnum = CurrencyEnum.RUB
 
 
-class UserRequest(BaseModel):
-    login: str = Field(..., max_length=127)
+Login = Annotated[str, StringConstraints(strip_whitespace=True, min_length=3, max_length=127)]
+Password = Annotated[str, StringConstraints(min_length=8, max_length=72)]
 
-class UserResponse(UserRequest):
+class UserCreateRequest(BaseModel):
+    login: Login
+    password: Password
+
+class LoginRequest(BaseModel):
+    login: str
+    password: str
+
+class UserResponse(BaseModel):
     model_config = {"from_attributes": True}
     id: int
+    login: str
 
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = 'bearer'
 
 class WalletResponse(BaseModel):
     model_config = {"from_attributes": True}

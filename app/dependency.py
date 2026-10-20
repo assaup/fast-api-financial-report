@@ -5,6 +5,7 @@ from fastapi import Depends, HTTPException, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.models import User
 from app.repository import users as users_repository
+from app.security import decode_access_token
 
 security = HTTPBearer()
 
@@ -16,15 +17,25 @@ def get_db() -> Generator[Session, None, None]:
     finally:
         db.close()
 
+
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security),
                      db: Session = Depends(get_db)) -> User:
-    login = credentials.credentials
+    unauthorized = HTTPException(
+        status_code=401,
+        detail="Invalid or expired token",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 
-    user = users_repository.get_user(db, login)
+    user_id = decode_access_token(credentials.credentials)
+    if user_id is None:
+        raise unauthorized
+
+    user = users_repository.get_user_by_id(db, user_id)
 
     if not user:
-        raise HTTPException(status_code=401, detail="Unauthorized")
+        raise unauthorized
     return user
+
 
 class Pagination:
     def __init__(
