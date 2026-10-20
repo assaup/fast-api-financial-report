@@ -1,6 +1,6 @@
 from decimal import Decimal
 from sqlalchemy.orm import Session
-from app.enum import CurrencyEnum
+from app.enum import CurrencyEnum, OperationType
 from app.models import Operation
 from datetime import datetime
 
@@ -28,18 +28,33 @@ def create_operation(
 def get_operations_list(
     db: Session,
     wallets_ids: list[int],
+    limit: int,
+    offset: int,
     date_from: datetime | None,
-    date_to: datetime | None
+    date_to: datetime | None,
+    type: OperationType | None = None,
+    category: str | None = None
 ) -> list[Operation]:
     query = db.query(Operation).filter(Operation.wallet_id.in_(wallets_ids))
 
-    if date_from:
+    if date_from is not None:
         query = query.filter(Operation.created_at >= date_from)
 
-    if date_to:
+    if date_to is not None:
         query = query.filter(Operation.created_at <= date_to)
 
-    return query.all()
+    if type is not None:
+        query = query.filter(Operation.type == type)
+
+    if category is not None:
+        query = query.filter(Operation.category == category)
+
+    return (query
+            .order_by(Operation.created_at.desc(), Operation.id.desc())
+            .limit(limit)
+            .offset(offset)
+            .all()
+            )
 
 def delete_operations_by_wallet(db: Session, wallet_id: int) -> None:
     db.query(Operation).filter(Operation.wallet_id == wallet_id).delete()

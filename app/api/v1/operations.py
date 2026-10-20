@@ -3,9 +3,10 @@ from fastapi import APIRouter, Depends, Query
 from app.schemas import OperationRequest, OperationResponse, TransferCreateSchema
 from sqlalchemy.orm import Session
 from app.models import User
-from app.dependency import get_db, get_current_user
+from app.dependency import get_db, get_current_user, Pagination
 from datetime import datetime
-
+from typing import Annotated
+from app.enum import OperationType
 
 router = APIRouter()
 @router.post("/operation/income", response_model=OperationResponse)
@@ -21,13 +22,16 @@ def add_expense(operation: OperationRequest, db: Session = Depends(get_db),
 
 @router.get("/operations", response_model=list[OperationResponse])
 def get_operations_list(
+    pagination: Annotated[Pagination, Depends()],
     wallet_id: int | None = Query(None),
     date_from: datetime | None = Query(None),
     date_to: datetime | None = Query(None),
+    type: OperationType | None = Query(None),
+    category: str | None = Query(None),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return operations_service.get_operations_list(db, user, wallet_id, date_from, date_to)
+    return operations_service.get_operations_list(db, user, pagination, wallet_id, date_from, date_to, type, category)
 
 @router.post('/operation/transfer', response_model=OperationResponse)
 async def create_transfer(

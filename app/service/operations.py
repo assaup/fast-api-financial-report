@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 from decimal import Decimal
 from app.service.exchange_service import get_exchange_rate
+from app.dependency import Pagination 
 
 
 def _get_wallet_or_404(db: Session, user_id: int, wallet_name: str) -> Wallet:
@@ -57,12 +58,15 @@ def add_expense(db: Session, current_user: User, operation: OperationRequest):
 def get_operations_list(
     db: Session, 
     current_user: User, 
+    pagination: Pagination,
     wallet_id: int | None = None,
     date_from: datetime | None = None,
     date_to: datetime | None = None,
+    type: OperationType | None = None,
+    category: str | None = None,
 ) -> list[OperationResponse]:
 
-    if wallet_id:
+    if wallet_id is not None:
         wallet = wallets_repository.get_wallet_by_id(db, current_user.id, wallet_id)
         if not wallet:
             raise HTTPException(
@@ -77,8 +81,12 @@ def get_operations_list(
     operations = operations_repository.get_operations_list(
         db,
         wallets_ids,
+        pagination.limit,
+        pagination.offset,
         date_from,
-        date_to
+        date_to,
+        type,
+        category,
     )
     result = []
     for operation in operations:
