@@ -7,7 +7,7 @@ from decimal import Decimal
 from app.enum import CurrencyEnum
 from app.service import exchange_service
 from app.repository import operations as operations_repository
-
+from app.dependency import Pagination
 
 
 async def get_total_balance(db: Session, current_user: User) -> TotalBalance:
@@ -35,8 +35,8 @@ def create_wallet(db: Session, current_user: User, wallet: CreateWalletRequest) 
 
     return WalletResponse.model_validate(wallet)
 
-def get_all_wallets(db: Session, current_user: User) -> list[WalletResponse]:
-    wallets = wallets_repository.get_all_wallets(db, current_user.id)
+def get_all_wallets(db: Session, current_user: User, pagination: Pagination) -> list[WalletResponse]:
+    wallets = wallets_repository.get_all_wallets(db, current_user.id, pagination.limit, pagination.offset)
     return [WalletResponse.model_validate(wallet) for wallet in wallets]
 
 def _get_wallet_or_404(db: Session, user_id: int, wallet_id: int) -> Wallet:

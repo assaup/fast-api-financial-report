@@ -2,7 +2,7 @@ from app.schemas import CreateWalletRequest
 from app.service import wallets as wallets_service
 from fastapi import Depends, Path, status, APIRouter
 from sqlalchemy.orm import Session
-from app.dependency import get_db, get_current_user
+from app.dependency import get_db, get_current_user, Pagination
 from app.models import User
 from app.schemas import WalletResponse, WalletUpdateRequest
 from typing import Annotated
@@ -21,8 +21,12 @@ def create_wallet(wallet: CreateWalletRequest, db: Session = Depends(get_db),
     return wallets_service.create_wallet(db, current_user, wallet)
     
 @router.get("/wallets", response_model=list[WalletResponse])
-def get_all_wallets(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    return wallets_service.get_all_wallets(db, current_user)
+def get_all_wallets(
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user),
+        pagination: Pagination = Depends(),
+    ):
+    return wallets_service.get_all_wallets(db, current_user, pagination)
 
 @router.get('/wallets/{wallet_id}', response_model=WalletResponse)
 def get_wallet(

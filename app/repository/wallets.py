@@ -9,8 +9,9 @@ def get_wallet_balance_by_name(db: Session, user_id: int, wallet_name: str) -> W
 def get_wallet_by_id(db: Session, user_id: int, wallet_id: int) -> Wallet | None:
     return db.query(Wallet).filter(Wallet.id == wallet_id, Wallet.user_id == user_id).first()
 
-def get_all_wallets(db: Session, user_id: int) -> list[Wallet]:
-    return db.query(Wallet).filter(Wallet.user_id == user_id).all()
+def get_all_wallets(db: Session, user_id: int, limit: int | None = None, offset: int | None = None) -> list[Wallet]:
+    query = db.query(Wallet).filter(Wallet.user_id == user_id)
+    return (query.order_by(Wallet.id.desc()).limit(limit).offset(offset).all())
 
 def create_wallet(db: Session, user_id: int, wallet_name: str, amount: float, currency: CurrencyEnum) -> Wallet:
     wallet = Wallet(name=wallet_name, balance=amount, user_id=user_id, currency=currency)
