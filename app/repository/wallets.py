@@ -17,3 +17,7 @@ def create_wallet(db: Session, user_id: int, wallet_name: str, amount: float, cu
     db.add(wallet)
     db.flush()
     return wallet
+
+def delete_wallet(db: Session,wallet: Wallet) -> None:
+    db.delete(wallet)
+    return 

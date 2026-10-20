@@ -66,3 +66,6 @@ class TransferCreateSchema(BaseModel):
 
 class TotalBalance(BaseModel):
     total_balance: Decimal
+
+class WalletUpdateRequest(BaseModel):
+    name: WalletName | None = None

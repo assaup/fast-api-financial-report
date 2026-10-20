@@ -1,12 +1,12 @@
-from fastapi import HTTPException, Depends
-from app.schemas import CreateWalletRequest, WalletResponse, TotalBalance
+from fastapi import HTTPException
+from app.schemas import CreateWalletRequest, WalletResponse, TotalBalance, WalletUpdateRequest
 from app.repository import wallets as wallets_repository
-from app.database import SessionLocal
 from sqlalchemy.orm import Session
-from app.models import User
+from app.models import User, Wallet
 from decimal import Decimal
 from app.enum import CurrencyEnum
 from app.service import exchange_service
+from app.repository import operations as operations_repository
 
 
 
@@ -39,3 +39,27 @@ def get_all_wallets(db: Session, current_user: User) -> list[WalletResponse]:
     wallets = wallets_repository.get_all_wallets(db, current_user.id)
     return [WalletResponse.model_validate(wallet) for wallet in wallets]
 
+def _get_wallet_or_404(db: Session, user_id: int, wallet_id: int) -> Wallet:
+    wallet = wallets_repository.get_wallet_by_id(db, user_id, wallet_id)
+    if wallet is None:
+        raise HTTPException(status_code=404, detail=f"Wallet '{wallet_id}' not found")
+    return wallet
+
+def get_wallet(db: Session, current_user: User, wallet_id: int) -> WalletResponse:
+    wallet = _get_wallet_or_404(db, current_user.id, wallet_id)
+    return WalletResponse.model_validate(wallet)
+
+def update_wallet(db: Session, current_user: User, wallet_id: int, payload: WalletUpdateRequest) -> WalletResponse:
+    wallet = _get_wallet_or_404(db, current_user.id, wallet_id)
+    if payload.name is not None:
+        wallet.name = payload.name
+    db.commit()
+    return WalletResponse.model_validate(wallet)
+
+def delete_wallet(db: Session, current_user: User, wallet_id: int) -> None:
+    wallet = _get_wallet_or_404(db, current_user.id, wallet_id)
+    if wallet.balance > 0:
+        raise HTTPException(status_code=400, detail=f"Wallet '{wallet.name}' has non-zero balance: {wallet.balance}. Withdraw or transfer it first",)
+    operations_repository.delete_operations_by_wallet(db, wallet_id)
+    wallets_repository.delete_wallet(db, wallet)
+    db.commit()

@@ -40,3 +40,6 @@ def get_operations_list(
         query = query.filter(Operation.created_at <= date_to)
 
     return query.all()
+
+def delete_operations_by_wallet(db: Session, wallet_id: int) -> None:
+    db.query(Operation).filter(Operation.wallet_id == wallet_id).delete()

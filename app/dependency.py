@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from typing import Generator
 from app.database import SessionLocal
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.models import User
 from app.repository import users as users_repository
