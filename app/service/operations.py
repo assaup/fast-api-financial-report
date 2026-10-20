@@ -9,6 +9,7 @@ from datetime import datetime
 from decimal import Decimal
 from app.service.exchange_service import get_exchange_rate
 from app.dependency import Pagination 
+from app.service.wallets import get_wallet_ids
 
 
 def _get_wallet_or_404(db: Session, user_id: int, wallet_name: str) -> Wallet:
@@ -66,17 +67,7 @@ def get_operations_list(
     category: str | None = None,
 ) -> list[OperationResponse]:
 
-    if wallet_id is not None:
-        wallet = wallets_repository.get_wallet_by_id(db, current_user.id, wallet_id)
-        if not wallet:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Wallet '{wallet_id}' not found"
-            )
-        wallets_ids = [wallet.id]
-    else:
-        wallets = wallets_repository.get_all_wallets(db, current_user.id)
-        wallets_ids = [w.id for w in wallets]
+    wallets_ids = get_wallet_ids(db, current_user.id, wallet_id)
 
     operations = operations_repository.get_operations_list(
         db,

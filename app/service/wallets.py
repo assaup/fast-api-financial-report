@@ -63,3 +63,11 @@ def delete_wallet(db: Session, current_user: User, wallet_id: int) -> None:
     operations_repository.delete_operations_by_wallet(db, wallet_id)
     wallets_repository.delete_wallet(db, wallet)
     db.commit()
+
+
+def get_wallet_ids(db: Session, user_id: int, wallet_id: int | None = None) -> list[int]:
+    if wallet_id is not None:
+        wallet = _get_wallet_or_404(db, user_id, wallet_id)
+        return [wallet.id]
+    wallets = wallets_repository.get_all_wallets(db, user_id)
+    return [wallet.id for wallet in wallets]

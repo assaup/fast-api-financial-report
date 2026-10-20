@@ -69,3 +69,11 @@ class TotalBalance(BaseModel):
 
 class WalletUpdateRequest(BaseModel):
     name: WalletName | None = None
+
+class ExpenseStatsItem(BaseModel):
+    model_config = {'from_attributes': True}
+
+    category: str | None
+    currency: CurrencyEnum
+    total: Decimal
+    count: int
