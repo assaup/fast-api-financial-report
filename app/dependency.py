@@ -1,6 +1,6 @@
-from sqlalchemy.orm import Session
-from typing import Generator
-from app.database import SessionLocal
+from sqlalchemy.ext.asyncio import AsyncSession
+from typing import AsyncGenerator
+from app.database import AsyncSessionLocal
 from fastapi import Depends, HTTPException, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.models import User
@@ -10,16 +10,12 @@ from app.security import decode_access_token
 security = HTTPBearer()
 
 
-def get_db() -> Generator[Session, None, None]:
-    db = SessionLocal()
-    try:
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    async with AsyncSessionLocal() as db:
         yield db
-    finally:
-        db.close()
 
 
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security),
-                     db: Session = Depends(get_db)) -> User:
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security), db: AsyncSession = Depends(get_db)) -> User:
     unauthorized = HTTPException(
         status_code=401,
         detail="Invalid or expired token",
@@ -30,7 +26,7 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     if user_id is None:
         raise unauthorized
 
-    user = users_repository.get_user_by_id(db, user_id)
+    user = await users_repository.get_user_by_id(db, user_id)
 
     if not user:
         raise unauthorized

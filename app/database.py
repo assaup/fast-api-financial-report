@@ -1,11 +1,9 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from sqlalchemy.orm import declarative_base
 from app.config import settings
 
-connect_args = {"check_same_thread": False} if settings.database_url.startswith('sqlite') else {}
+engine = create_async_engine(settings.database_url)
 
-engine = create_engine(settings.database_url, connect_args=connect_args)
-
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
 Base = declarative_base()
