@@ -2,7 +2,7 @@ from decimal import Decimal
 from app.database import Base
 from datetime import datetime
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, false
 from app.enum import CurrencyEnum
 
 
@@ -23,6 +23,7 @@ class Wallet(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
 
     currency: Mapped[CurrencyEnum]
+    is_archived: Mapped[bool] = mapped_column(server_default=false(), default=False)
 
 class Operation(Base):
     __tablename__ = "operation"

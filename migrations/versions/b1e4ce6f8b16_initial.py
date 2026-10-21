@@ -58,4 +58,5 @@ def downgrade() -> None:
     op.drop_table('operation')
     op.drop_table('wallet')
     op.drop_table('user')
+    sa.Enum(name="currencyenum").drop(op.get_bind(), checkfirst=True)
     # ### end Alembic commands ###
