@@ -18,8 +18,7 @@ async def create_user(db: AsyncSession, payload: UserCreateRequest) -> UserRespo
 
 async def login(db: AsyncSession, payload: LoginRequest) -> TokenResponse:
     user = await user_repository.get_user(db, payload.login)
-    hashed = await run_in_threadpool(verify_password, payload.password, user.hashed_password)
-    if user is None or not hashed:
+    if user is None or not await run_in_threadpool(verify_password, payload.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Incorrect login or password", headers={"WWW-Authenticate": "Bearer"})
     
     access_token=create_access_token(user.id)
