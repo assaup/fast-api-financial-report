@@ -1,5 +1,5 @@
 from app.schemas import OperationRequest, OperationResponse
-from fastapi import HTTPException
+from app.exceptions import WalletNotFoundError, InsufficientFundsError, WalletNotEmptyError
 from app.repository import wallets as wallets_repository
 from app.repository import operations as operations_repository
 from app.models import User, Wallet
@@ -15,7 +15,7 @@ from app.service.wallets import get_wallet_ids
 async def _get_wallet_or_404(db: AsyncSession, user_id: int, wallet_name: str) -> Wallet:
     wallet = await wallets_repository.get_wallet_balance_by_name(db, user_id, wallet_name)
     if wallet is None:
-        raise HTTPException(status_code=404, detail=f"Wallet '{wallet_name}' not found")
+        raise WalletNotFoundError(wallet_name)
     return wallet
 
 async def add_income(db: AsyncSession, current_user: User, operation: OperationRequest):
@@ -39,10 +39,7 @@ async def add_expense(db: AsyncSession, current_user: User, operation: Operation
     wallet = await _get_wallet_or_404(db, current_user.id, operation.wallet_name)
 
     if wallet.balance < operation.amount:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Insufficient funds. Avaible: {wallet.balance}"
-        )
+        raise InsufficientFundsError(wallet.balance, operation.amount, wallet.currency)
     
     wallet.balance -= operation.amount
     operation = await operations_repository.create_operation(
@@ -90,14 +87,13 @@ async def transfer_between_wallets(
     from_wallet = await wallets_repository.get_wallet_by_id(db, user_id, from_wallet_id)
     to_wallet = await wallets_repository.get_wallet_by_id(db, user_id, to_wallet_id)
 
-    if not from_wallet or not to_wallet:
-        raise HTTPException(404, "Wallet not Found")
+    if not from_wallet:
+        raise WalletNotFoundError(from_wallet_id)
+    if not to_wallet:
+        raise WalletNotFoundError(to_wallet_id)
 
     if from_wallet.balance < amount:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Not enough money: {from_wallet.balance} {from_wallet.currency}"
-        )
+        raise InsufficientFundsError(from_wallet.balance, amount, from_wallet.currency)
 
     target_amount = amount
     exchange_rate = 1.0

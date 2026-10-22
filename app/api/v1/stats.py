@@ -8,9 +8,12 @@ from app.models import User
 from app.schemas import ExpenseStatsItem
 from app.service import stats as stats_service
 
-router = APIRouter()
+from app.api.responses import error_responses, AUTH_ERRORS
+from app.exceptions import InvalidDateRangeError, WalletNotFoundError  
 
-@router.get('/stats/expenses', response_model=list[ExpenseStatsItem])
+router = APIRouter(responses=error_responses(*AUTH_ERRORS))
+
+@router.get('/stats/expenses', response_model=list[ExpenseStatsItem], responses=error_responses(InvalidDateRangeError(), WalletNotFoundError(5)))
 async def get_expenses_by_category(
     wallet_id: int | None = Query(None, gt=0),
     date_from: datetime | None = Query(None),

@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import HTTPException
+from app.exceptions import UserAlreadyExistsError, InvalidCredentialsError
 from fastapi.concurrency import run_in_threadpool
 
 from app.repository import users as user_repository
@@ -9,7 +9,7 @@ from app.security import hash_password, verify_password, create_access_token
 
 async def create_user(db: AsyncSession, payload: UserCreateRequest) -> UserResponse:
     if await user_repository.get_user(db, payload.login):
-        raise HTTPException(status_code = 400, detail="User already exists")
+        raise UserAlreadyExistsError(payload.login)
 
     hashed = await run_in_threadpool(hash_password, payload.password)
     user = await user_repository.create_user(db, payload.login, hashed_password=hashed)
@@ -19,7 +19,7 @@ async def create_user(db: AsyncSession, payload: UserCreateRequest) -> UserRespo
 async def login(db: AsyncSession, payload: LoginRequest) -> TokenResponse:
     user = await user_repository.get_user(db, payload.login)
     if user is None or not await run_in_threadpool(verify_password, payload.password, user.hashed_password):
-        raise HTTPException(status_code=401, detail="Incorrect login or password", headers={"WWW-Authenticate": "Bearer"})
+        raise InvalidCredentialsError()
     
     access_token=create_access_token(user.id)
     return TokenResponse(access_token=access_token)

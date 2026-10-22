@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field, StringConstraints, model_validator
 from decimal import Decimal
 from app.enum import CurrencyEnum
 from datetime import datetime
-from typing import Annotated, Self
+from typing import Annotated, Self, Any
 
 
 PositiveMoney = Annotated[Decimal, Field(gt=0, max_digits=12, decimal_places=2)]
@@ -89,3 +89,11 @@ class ExpenseStatsItem(BaseModel):
     currency: CurrencyEnum
     total: Decimal
     count: int
+
+class ErrorBody(BaseModel):
+    code: str
+    message: str
+    details: dict[str, Any] = Field(default_factory=dict)
+
+class ErrorResponse(BaseModel):
+    error: ErrorBody

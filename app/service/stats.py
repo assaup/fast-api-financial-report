@@ -1,8 +1,6 @@
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import HTTPException
-
-
+from app.exceptions import InvalidDateRangeError, InsufficientFundsError, WalletNotEmptyError
 from app.models import User
 from app.repository import operations as operations_repository
 from app.schemas import ExpenseStatsItem
@@ -20,7 +18,7 @@ async def get_expenses_by_category(
     wallets_ids = await get_wallet_ids(db, current_user.id, wallet_id)
 
     if date_to and date_from and date_to < date_from:
-        raise HTTPException(400, detail="date_from must be earlier than or equal to date_to")
+        raise InvalidDateRangeError()
 
     rows = await operations_repository.get_expenses_by_category(
         db,

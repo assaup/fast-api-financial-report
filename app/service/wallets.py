@@ -1,4 +1,4 @@
-from fastapi import HTTPException
+from app.exceptions import WalletNotFoundError, WalletAlreadyExistsError, WalletNotEmptyError
 from app.schemas import CreateWalletRequest, WalletResponse, TotalBalance, WalletUpdateRequest
 from app.repository import wallets as wallets_repository
 from app.models import User, Wallet
@@ -25,10 +25,7 @@ async def get_total_balance(db: AsyncSession, current_user: User) -> TotalBalanc
 
 async def create_wallet(db: AsyncSession, current_user: User, wallet: CreateWalletRequest) -> WalletResponse:
     if await wallets_repository.get_wallet_balance_by_name(db, current_user.id, wallet.name):
-        raise HTTPException(
-            status_code=400,
-            detail=f"Wallet '{wallet.name}' already exists"
-        )
+        raise WalletAlreadyExistsError(wallet.name)
     wallet = await wallets_repository.create_wallet(db, current_user.id, wallet.name, wallet.initial_balance, wallet.currency)
 
     await db.commit()
@@ -42,7 +39,7 @@ async def get_all_wallets(db: AsyncSession, current_user: User, pagination: Pagi
 async def _get_wallet_or_404(db: AsyncSession, user_id: int, wallet_id: int) -> Wallet:
     wallet = await wallets_repository.get_wallet_by_id(db, user_id, wallet_id)
     if wallet is None:
-        raise HTTPException(status_code=404, detail=f"Wallet '{wallet_id}' not found")
+        raise WalletNotFoundError(wallet_id)
     return wallet
 
 async def get_wallet(db: AsyncSession, current_user: User, wallet_id: int) -> WalletResponse:
@@ -59,7 +56,7 @@ async def update_wallet(db: AsyncSession, current_user: User, wallet_id: int, pa
 async def delete_wallet(db: AsyncSession, current_user: User, wallet_id: int) -> None:
     wallet = await _get_wallet_or_404(db, current_user.id, wallet_id)
     if wallet.balance > 0:
-        raise HTTPException(status_code=400, detail=f"Wallet '{wallet.name}' has non-zero balance: {wallet.balance}. Withdraw or transfer it first",)
+        raise WalletNotEmptyError(wallet.name, wallet.balance)
     await operations_repository.delete_operations_by_wallet(db, wallet_id)
     await wallets_repository.delete_wallet(db, wallet)
     await db.commit()
