@@ -1,11 +1,13 @@
+from collections.abc import Generator
+
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
-from typing import Generator
-from main import app
-from app.dependency import get_db
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
+
 from app.database import Base
+from app.dependency import get_db
+from main import app
 
 DATABASE_URL = "sqlite:///./test.db"
 
@@ -29,14 +31,16 @@ app.dependency_overrides[get_db] = get_test_db
 def client():
     yield TestClient(app)
 
+
 @pytest.fixture(autouse=True)
 def setup_db():
     Base.metadata.create_all(bind=test_engine)
     yield
     Base.metadata.drop_all(bind=test_engine)
 
+
 @pytest.fixture()
-def db_session()-> Generator[Session, None, None]:
+def db_session() -> Generator[Session, None, None]:
     db = TestSessionLocal()
     try:
         yield db

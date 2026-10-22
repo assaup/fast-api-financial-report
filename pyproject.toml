@@ -1,0 +1,19 @@
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+exclude = ["migrations/versions"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # стиль PEP 8
+    "F",    # явные ошибки: неиспользуемые импорты, неопределённые имена
+    "I",    # сортировка импортов
+    "UP",   # устаревший синтаксис -> современный
+    "B",    # частые ошибки (bugbear)
+]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Path", "fastapi.Body"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]

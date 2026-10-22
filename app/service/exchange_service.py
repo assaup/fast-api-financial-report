@@ -1,10 +1,11 @@
 from decimal import Decimal
-from typing import Dict, Tuple
+
 import aiohttp
+
 from app.config import settings
 from app.enum import CurrencyEnum
 
-FALLBACK_RATES: Dict[Tuple[str, str], Decimal] = {
+FALLBACK_RATES: dict[tuple[str, str], Decimal] = {
     (CurrencyEnum.USD, CurrencyEnum.RUB): Decimal(str(95.0)),
     (CurrencyEnum.USD, CurrencyEnum.EUR): Decimal(str(0.92)),
     (CurrencyEnum.EUR, CurrencyEnum.RUB): Decimal(str(103.0)),
@@ -13,12 +14,12 @@ FALLBACK_RATES: Dict[Tuple[str, str], Decimal] = {
     (CurrencyEnum.RUB, CurrencyEnum.EUR): Decimal(str(0.0097)),
 }
 
+
 async def get_exchange_rate(base: CurrencyEnum, target: CurrencyEnum) -> Decimal:
 
     url = f"{settings.exchange_api_url}/{base}.json"
 
     timeout = aiohttp.ClientTimeout(settings.exchange_api_timeout)
-    
 
     try:
         async with aiohttp.ClientSession(timeout=timeout) as session:
@@ -30,7 +31,7 @@ async def get_exchange_rate(base: CurrencyEnum, target: CurrencyEnum) -> Decimal
 
         if rate is not None and isinstance(rate, (int, float)):
             return Decimal(rate)
-        raise KeyError('Rate not found')
-        
+        raise KeyError("Rate not found")
+
     except Exception:
         return FALLBACK_RATES.get((base, target), Decimal(1))

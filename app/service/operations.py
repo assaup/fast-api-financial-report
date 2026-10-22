@@ -1,14 +1,16 @@
-from app.schemas import OperationRequest, OperationResponse
-from app.exceptions import WalletNotFoundError, InsufficientFundsError, WalletNotEmptyError
-from app.repository import wallets as wallets_repository
-from app.repository import operations as operations_repository
-from app.models import User, Wallet
-from app.enum import OperationType
-from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
 from decimal import Decimal
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.dependency import Pagination
+from app.enum import OperationType
+from app.exceptions import InsufficientFundsError, WalletNotFoundError
+from app.models import User, Wallet
+from app.repository import operations as operations_repository
+from app.repository import wallets as wallets_repository
+from app.schemas import OperationRequest, OperationResponse
 from app.service.exchange_service import get_exchange_rate
-from app.dependency import Pagination 
 from app.service.wallets import get_wallet_ids
 
 
@@ -18,19 +20,20 @@ async def _get_wallet_or_404(db: AsyncSession, user_id: int, wallet_name: str) -
         raise WalletNotFoundError(wallet_name)
     return wallet
 
+
 async def add_income(db: AsyncSession, current_user: User, operation: OperationRequest):
     wallet = await _get_wallet_or_404(db, current_user.id, operation.wallet_name)
 
     wallet.balance += operation.amount
-    
+
     operation = await operations_repository.create_operation(
         db=db,
         wallet_id=wallet.id,
         type=OperationType.INCOME,
         amount=operation.amount,
         currency=wallet.currency,
-        category=operation.description
-        )
+        category=operation.description,
+    )
     await db.commit()
     return OperationResponse.model_validate(operation)
 
@@ -40,7 +43,7 @@ async def add_expense(db: AsyncSession, current_user: User, operation: Operation
 
     if wallet.balance < operation.amount:
         raise InsufficientFundsError(wallet.balance, operation.amount, wallet.currency)
-    
+
     wallet.balance -= operation.amount
     operation = await operations_repository.create_operation(
         db=db,
@@ -48,14 +51,15 @@ async def add_expense(db: AsyncSession, current_user: User, operation: Operation
         type=OperationType.EXPENSE,
         amount=operation.amount,
         currency=wallet.currency,
-        category=operation.description
-        )
+        category=operation.description,
+    )
     await db.commit()
     return OperationResponse.model_validate(operation)
 
+
 async def get_operations_list(
-    db: AsyncSession, 
-    current_user: User, 
+    db: AsyncSession,
+    current_user: User,
     pagination: Pagination,
     wallet_id: int | None = None,
     date_from: datetime | None = None,
@@ -81,8 +85,13 @@ async def get_operations_list(
         result.append(OperationResponse.model_validate(operation))
     return result
 
+
 async def transfer_between_wallets(
-        db: AsyncSession, user_id: int, from_wallet_id: int, to_wallet_id: int, amount: Decimal,
+    db: AsyncSession,
+    user_id: int,
+    from_wallet_id: int,
+    to_wallet_id: int,
+    amount: Decimal,
 ) -> OperationResponse:
     from_wallet = await wallets_repository.get_wallet_by_id(db, user_id, from_wallet_id)
     to_wallet = await wallets_repository.get_wallet_by_id(db, user_id, to_wallet_id)
@@ -98,9 +107,7 @@ async def transfer_between_wallets(
     target_amount = amount
     exchange_rate = 1.0
     if from_wallet.currency != to_wallet.currency:
-        exchange_rate = await get_exchange_rate(
-            from_wallet.currency, to_wallet.currency
-        )
+        exchange_rate = await get_exchange_rate(from_wallet.currency, to_wallet.currency)
         target_amount = round(amount * exchange_rate, 2)
 
     from_wallet.balance = round(from_wallet.balance - amount, 2)
@@ -111,7 +118,7 @@ async def transfer_between_wallets(
         type=OperationType.TRANSFER,
         amount=target_amount,
         currency=to_wallet.currency,
-        category='перевод'
+        category="перевод",
     )
     db.add(from_wallet)
     db.add(to_wallet)

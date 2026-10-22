@@ -1,8 +1,10 @@
-from app.models import User, Wallet
 from decimal import Decimal
 
+from app.models import User, Wallet
+
+
 def test_add_expense_success(db_session, client):
-    #Arrange
+    # Arrange
     user = User(login="test")
     db_session.add(user)
     db_session.flush()
@@ -11,8 +13,7 @@ def test_add_expense_success(db_session, client):
     db_session.commit()
     db_session.refresh(wallet)
 
-
-    #Act
+    # Act
     response = client.post(
         "/api/v1/operation/expense",
         json={
@@ -20,19 +21,20 @@ def test_add_expense_success(db_session, client):
             "amount": 50.0,
             "description": "Food",
         },
-        headers={"Authorization": f"Bearer {user.login}"}
+        headers={"Authorization": f"Bearer {user.login}"},
     )
 
-    #Assert
+    # Assert
     assert response.status_code == 200, response.text
     assert response.json()["message"] == "Expense added"
     assert response.json()["wallet"] == wallet.name
     assert Decimal(str(response.json()["amount"])) == Decimal(50)
     assert Decimal(str(response.json()["new_balance"])) == Decimal(150)
-    assert response.json()['description'] == "Food"
+    assert response.json()["description"] == "Food"
+
 
 def test_add_expense_negative_amount(db_session, client):
-    #Arrange
+    # Arrange
     user = User(login="test")
     db_session.add(user)
     db_session.flush()
@@ -41,7 +43,7 @@ def test_add_expense_negative_amount(db_session, client):
     db_session.commit()
     db_session.refresh(wallet)
 
-    #Act
+    # Act
     response = client.post(
         "/api/v1/operation/expense",
         json={
@@ -49,15 +51,15 @@ def test_add_expense_negative_amount(db_session, client):
             "amount": -50.0,
             "description": "Food",
         },
-        headers={"Authorization": f"Bearer {user.login}"}
+        headers={"Authorization": f"Bearer {user.login}"},
     )
 
-    #Assert
+    # Assert
     assert response.status_code == 422, response.text
 
 
 def test_add_expense_empty_name(db_session, client):
-    #Arrange
+    # Arrange
     user = User(login="test")
     db_session.add(user)
     db_session.flush()
@@ -66,7 +68,7 @@ def test_add_expense_empty_name(db_session, client):
     db_session.commit()
     db_session.refresh(wallet)
 
-    #Act
+    # Act
     response = client.post(
         "/api/v1/operation/expense",
         json={
@@ -74,19 +76,20 @@ def test_add_expense_empty_name(db_session, client):
             "amount": 100.0,
             "description": "Food",
         },
-        headers={"Authorization": f"Bearer {user.login}"}
+        headers={"Authorization": f"Bearer {user.login}"},
     )
 
-    #Assert
+    # Assert
     assert response.status_code == 422, response.text
 
+
 def test_add_expense_wallet_not_exist(db_session, client):
-    #Arrange
+    # Arrange
     user = User(login="test")
     db_session.add(user)
     db_session.flush()
     db_session.commit()
-    #Act
+    # Act
     response = client.post(
         "/api/v1/operation/expense",
         json={
@@ -94,16 +97,16 @@ def test_add_expense_wallet_not_exist(db_session, client):
             "amount": 50.0,
             "description": "Food",
         },
-        headers={"Authorization": f"Bearer {user.login}"}
+        headers={"Authorization": f"Bearer {user.login}"},
     )
 
-    #Assert
+    # Assert
     assert response.status_code == 404, response.text
 
 
 def test_add_expense_wallet_unauthorized(client):
 
-    #Act
+    # Act
     response = client.post(
         "/api/v1/operation/expense",
         json={
@@ -111,16 +114,15 @@ def test_add_expense_wallet_unauthorized(client):
             "amount": 50.0,
             "description": "Food",
         },
-        headers={"Authorization": f"Bearer notexists"}
+        headers={"Authorization": "Bearer notexists"},
     )
 
-    #Assert
+    # Assert
     assert response.status_code == 401, response.text
 
 
-
 def test_add_expense_not_enogh_money(db_session, client):
-    #Arrange
+    # Arrange
     user = User(login="test")
     db_session.add(user)
     db_session.flush()
@@ -129,7 +131,7 @@ def test_add_expense_not_enogh_money(db_session, client):
     db_session.commit()
     db_session.refresh(wallet)
 
-    #Act
+    # Act
     response = client.post(
         "/api/v1/operation/expense",
         json={
@@ -137,8 +139,8 @@ def test_add_expense_not_enogh_money(db_session, client):
             "amount": 400.0,
             "description": "Food",
         },
-        headers={"Authorization": f"Bearer {user.login}"}
+        headers={"Authorization": f"Bearer {user.login}"},
     )
 
-    #Assert
+    # Assert
     assert response.status_code == 400, response.text

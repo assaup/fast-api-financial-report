@@ -1,9 +1,10 @@
-from pydantic import BaseModel, Field, StringConstraints, model_validator
-from decimal import Decimal
-from app.enum import CurrencyEnum
 from datetime import datetime
-from typing import Annotated, Self, Any
+from decimal import Decimal
+from typing import Annotated, Any, Self
 
+from pydantic import BaseModel, Field, StringConstraints, model_validator
+
+from app.enum import CurrencyEnum
 
 PositiveMoney = Annotated[Decimal, Field(gt=0, max_digits=12, decimal_places=2)]
 NonNegativeMoney = Annotated[Decimal, Field(ge=0, max_digits=12, decimal_places=2)]
@@ -25,22 +26,27 @@ class CreateWalletRequest(BaseModel):
 Login = Annotated[str, StringConstraints(strip_whitespace=True, min_length=3, max_length=127)]
 Password = Annotated[str, StringConstraints(min_length=8, max_length=72)]
 
+
 class UserCreateRequest(BaseModel):
     login: Login
     password: Password
 
+
 class LoginRequest(BaseModel):
     login: str
     password: str
+
 
 class UserResponse(BaseModel):
     model_config = {"from_attributes": True}
     id: int
     login: str
 
+
 class TokenResponse(BaseModel):
     access_token: str
-    token_type: str = 'bearer'
+    token_type: str = "bearer"
+
 
 class WalletResponse(BaseModel):
     model_config = {"from_attributes": True}
@@ -70,30 +76,35 @@ class TransferCreateSchema(BaseModel):
     amount: PositiveMoney
 
     # Запрет перевода самому себе
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def wallet_must_differ(self) -> Self:
         if self.from_wallet_id == self.to_wallet_id:
             raise ValueError("Cannot transfer to the same wallet")
         return self
 
+
 class TotalBalance(BaseModel):
     total_balance: Decimal
+
 
 class WalletUpdateRequest(BaseModel):
     name: WalletName | None = None
 
+
 class ExpenseStatsItem(BaseModel):
-    model_config = {'from_attributes': True}
+    model_config = {"from_attributes": True}
 
     category: str | None
     currency: CurrencyEnum
     total: Decimal
     count: int
 
+
 class ErrorBody(BaseModel):
     code: str
     message: str
     details: dict[str, Any] = Field(default_factory=dict)
+
 
 class ErrorResponse(BaseModel):
     error: ErrorBody

@@ -1,10 +1,10 @@
 from fastapi import FastAPI
-from app.api.v1.wallets import router as wallet_router
-from app.api.v1.operations import router as operations_router
-from app.api.v1.users import router as users_router 
-from app.api.v1.stats import router as stats_router
-from app.exception_handlers import register_exception_handlers
 
+from app.api.v1.operations import router as operations_router
+from app.api.v1.stats import router as stats_router
+from app.api.v1.users import router as users_router
+from app.api.v1.wallets import router as wallet_router
+from app.exception_handlers import register_exception_handlers
 
 app = FastAPI()
 register_exception_handlers(app)
