@@ -1,34 +1,37 @@
-from app.database import SessionLocal
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.enum import CurrencyEnum
 from app.models import Wallet
-from decimal import Decimal
-from sqlalchemy.orm import Session
-
-def is_wallet_exist(db: Session, wallet_name: str) -> bool:
-    return db.query(Wallet).filter(Wallet.name == wallet_name).first() is not None
 
 
-def get_wallet_balance_by_name(db: Session, wallet_name: str) -> Wallet:
-    return db.query(Wallet).filter(Wallet.name == wallet_name).first()
+async def get_wallet_balance_by_name(db: AsyncSession, user_id: int, wallet_name: str) -> Wallet | None:
+    stmt = select(Wallet).where(Wallet.name == wallet_name, Wallet.user_id == user_id)
+    return await db.scalar(stmt)
 
 
-def add_income(db: Session, wallet_name: str, amount: Decimal) -> Wallet:
-    wallet = db.query(Wallet).filter(Wallet.name == wallet_name).first()
-    wallet.balance += amount
-    return wallet
+async def get_wallet_by_id(db: AsyncSession, user_id: int, wallet_id: int) -> Wallet | None:
+    stmt = select(Wallet).where(Wallet.id == wallet_id, Wallet.user_id == user_id)
+    return await db.scalar(stmt)
 
 
-def add_expense(db: Session, wallet_name: str, amount: Decimal) -> Wallet:
-    wallet = db.query(Wallet).filter(Wallet.name == wallet_name).first()
-    wallet.balance -= amount
-    return wallet
+async def get_all_wallets(
+    db: AsyncSession, user_id: int, limit: int | None = None, offset: int | None = None
+) -> list[Wallet]:
+    stmt = select(Wallet).where(Wallet.user_id == user_id).order_by(Wallet.id.desc()).limit(limit).offset(offset)
+    res = await db.scalars(stmt)
+    return list(res.all())
 
 
-def get_all_wallets(db: Session) -> list[Wallet]:
-    return db.query(Wallet).all()
-
-
-def create_wallet(db: Session, wallet_name: str, amount: float) -> Wallet:
-    wallet = Wallet(name=wallet_name, balance=amount)
+async def create_wallet(
+    db: AsyncSession, user_id: int, wallet_name: str, amount: float, currency: CurrencyEnum
+) -> Wallet:
+    wallet = Wallet(name=wallet_name, balance=amount, user_id=user_id, currency=currency)
     db.add(wallet)
-    db.flush()
+    await db.flush()
     return wallet
+
+
+async def delete_wallet(db: AsyncSession, wallet: Wallet) -> None:
+    await db.delete(wallet)
